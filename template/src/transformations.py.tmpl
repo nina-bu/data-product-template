@@ -1,0 +1,28 @@
+"""Pure transformation logic for {{.product_name}}.
+
+Keep business logic here as plain Python functions with **no Spark / dbutils
+dependency**, so it can be imported and unit-tested on a CI agent without a
+cluster (see ../tests). The notebook in build_gold.py imports these functions
+and runs them against Spark.
+
+Rule of thumb: if a piece of logic can be checked with example inputs/outputs,
+it belongs here as a pure function; the notebook stays thin and just wires
+widgets to Spark.
+"""
+
+
+def summary_table_sql(catalog: str, schema: str, product: str) -> str:
+    """Return the SQL that (re)builds this product's gold summary table.
+
+    Pure string-building — no Spark — so it is trivially unit-testable.
+    REPLACE the SELECT with your real silver -> gold transformation.
+    """
+    if not catalog or not schema:
+        raise ValueError("catalog and schema are required")
+    return (
+        f"CREATE OR REPLACE TABLE {catalog}.{schema}.{product}_summary AS\n"
+        "SELECT\n"
+        "  current_date() AS run_date,\n"
+        "  'replace-me'   AS metric,\n"
+        "  0              AS value"
+    )

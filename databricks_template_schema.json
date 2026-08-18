@@ -1,0 +1,47 @@
+{
+  "welcome_message": "\n────────────────────────────────────────────────────────\n Gold-layer data product — Databricks Asset Bundle + Azure DevOps CI/CD\n────────────────────────────────────────────────────────\nAnswer 5 questions. Press Enter to accept the [default] shown in brackets.\n",
+  "min_databricks_cli_version": "v0.230.0",
+  "properties": {
+    "product_name": {
+      "type": "string",
+      "description": "1/5 Product name (snake_case). Becomes the bundle name, the job names, and the prefix for tables this product creates. Lowercase letters, digits and underscores only. Example: sales_gold",
+      "default": "sales_gold",
+      "order": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "pattern_match_failure_message": "Use lowercase letters, digits and underscores, starting with a letter (e.g. sales_gold)."
+    },
+    "workspace_host": {
+      "type": "string",
+      "description": "2/5 Workspace URL to deploy to, copied from your browser address bar. All three targets (dev/staging/prod) use this one workspace and are kept apart by schema. Must start with https://. Example: https://adb-1234567890123456.7.azuredatabricks.net",
+      "default": "https://adb-0000000000000000.0.azuredatabricks.net",
+      "order": 2,
+      "pattern": "^https://.+",
+      "pattern_match_failure_message": "Enter the full workspace URL, starting with https://"
+    },
+    "catalog": {
+      "type": "string",
+      "description": "3/5 Unity Catalog catalog where this product's tables live. It must already exist and you (plus the staging/prod service principals) must have access to it. Example: main",
+      "default": "main",
+      "order": 3,
+      "pattern": "^[A-Za-z0-9_]+$",
+      "pattern_match_failure_message": "A catalog name is letters, digits and underscores only."
+    },
+    "schema": {
+      "type": "string",
+      "description": "4/5 Base schema name. dev and staging automatically get _dev and _staging added; prod uses the name as-is. So 'analytics' -> analytics_dev (dev), analytics_staging (staging), analytics (prod). Example: analytics",
+      "default": "analytics",
+      "order": 4,
+      "pattern": "^[A-Za-z0-9_]+$",
+      "pattern_match_failure_message": "A schema name is letters, digits and underscores only."
+    },
+    "warehouse_id": {
+      "type": "string",
+      "description": "5/5 SQL warehouse id used by dashboards and queries. Find it in the workspace: SQL Warehouses -> your warehouse -> the id in the page URL (or 'Connection details'). Leave blank if this product has no dashboard yet. Example: 862f1d757f0424f7",
+      "default": "",
+      "order": 5,
+      "pattern": "^[a-zA-Z0-9]*$",
+      "pattern_match_failure_message": "A warehouse id is letters and digits only (or leave blank)."
+    }
+  },
+  "success_message": "\n✅ Created bundle '{{.product_name}}'.\n\n  Deploys to : {{.workspace_host}}\n  Catalog    : {{.catalog}}\n  Schemas    : {{.schema}}_dev (dev) | {{.schema}}_staging (staging) | {{.schema}} (prod)\n\nNext steps:\n  1. databricks bundle validate -t dev          # check it\n  2. pip install -r tests/requirements.txt && pytest   # run unit tests (no cluster)\n  3. Edit src/transformations.py + resources/   # replace the SAMPLE with your real logic\n  4. git add . && git commit && git push        # the pipeline takes over from here\n"
+}

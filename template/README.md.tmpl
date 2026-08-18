@@ -1,0 +1,41 @@
+# {{.product_name}}
+
+Gold-layer data product, deployed as a Databricks Asset Bundle with Azure DevOps CI/CD.
+
+## Targets
+
+| Target    | Mode        | Catalog        | Schema                 | Deployed by         |
+| --------- | ----------- | -------------- | ---------------------- | ------------------- |
+| `dev`     | development  | `{{.catalog}}` | `{{.schema}}_dev`      | you (interactively) |
+| `staging` | production   | `{{.catalog}}` | `{{.schema}}_staging`  | staging SP (CI)     |
+| `prod`    | production   | `{{.catalog}}` | `{{.schema}}`          | prod SP (CI)        |
+
+## Develop
+
+```bash
+databricks bundle validate -t dev
+databricks bundle deploy   -t dev
+databricks bundle run {{.product_name}}_build -t dev
+```
+
+Put pure logic in `src/transformations.py` and keep `src/build_gold.py` thin (it
+just wires widgets to Spark). Add more jobs, pipelines, or dashboards under
+`resources/`.
+
+## Test
+
+Unit tests for the pure logic in `src/transformations.py` run with **no cluster**:
+
+```bash
+pip install -r tests/requirements.txt
+pytest
+```
+
+The pipeline runs these on every PR (the `validate` stage). The Spark job itself
+is exercised end-to-end by the integration test —
+`databricks bundle run {{.product_name}}_build -t staging` — in the staging stage.
+
+## Ship
+
+Open a PR to `main` (the pipeline validates it), merge (deploys to staging and runs
+an integration test), then a platform approver promotes it to prod.

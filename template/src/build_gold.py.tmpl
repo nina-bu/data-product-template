@@ -1,0 +1,27 @@
+# Databricks notebook source
+# ── SAMPLE ───────────────────────────────────────────────────────────────────
+# Starter gold-table build for {{.product_name}}. This exists so the bundle
+# deploys and runs on day one. REPLACE the logic in transformations.py (which is
+# unit-tested) with your real silver -> gold transform.
+#
+# Pattern: pure logic lives in transformations.py (importable + unit-tested in
+# ../tests); this notebook stays thin — it just wires widgets to Spark. The
+# sibling module is importable because the bundle syncs src/ together and the
+# notebook's folder is on the Python path (Files in Workspace, default on
+# current DBR).
+# ─────────────────────────────────────────────────────────────────────────────
+
+from transformations import summary_table_sql
+
+dbutils.widgets.text("catalog", "")
+dbutils.widgets.text("schema", "")
+catalog = dbutils.widgets.get("catalog")
+schema = dbutils.widgets.get("schema")
+
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+
+# COMMAND ----------
+
+spark.sql(summary_table_sql(catalog, schema, "{{.product_name}}"))
+
+print(f"Built {catalog}.{schema}.{{.product_name}}_summary")

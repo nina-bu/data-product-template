@@ -1,0 +1,26 @@
+"""Unit tests for {{.product_name}} transformation logic.
+
+These run on the CI agent with **no Databricks workspace and no cluster** — see
+the `validate` stage in azure-pipelines.yml. They cover the pure functions in
+src/transformations.py.
+
+The Spark job itself (against real data) is covered by the *integration* test:
+`databricks bundle run {{.product_name}}_build -t staging` in the staging stage.
+"""
+
+import pytest
+
+from transformations import summary_table_sql
+
+
+def test_summary_table_sql_targets_the_right_table():
+    sql = summary_table_sql("main", "analytics_dev", "{{.product_name}}")
+    assert "main.analytics_dev.{{.product_name}}_summary" in sql
+    assert sql.startswith("CREATE OR REPLACE TABLE")
+
+
+def test_summary_table_sql_requires_catalog_and_schema():
+    with pytest.raises(ValueError):
+        summary_table_sql("", "analytics_dev", "{{.product_name}}")
+    with pytest.raises(ValueError):
+        summary_table_sql("main", "", "{{.product_name}}")

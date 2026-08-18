@@ -1,0 +1,72 @@
+# CI/CD for the {{.product_name}} bundle — Azure DevOps.
+#
+#   PR to main         -> run unit tests + validate the bundle (deploys nothing)
+#   merge to main      -> deploy to STAGING, run an integration test
+#   approval gate      -> deploy the SAME bundle to PRODUCTION
+#
+# Prod runs only after a human approves the "prod" Environment
+# (Pipelines > Environments > prod > Approvals and checks).
+#
+# Auth: OAuth service principal via the "databricks-sp" variable group
+# (DATABRICKS_HOST / DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET), sourced
+# from Azure Key Vault. No personal access tokens.
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+variables:
+  - group: databricks-sp
+
+stages:
+  - stage: validate
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    jobs:
+      - job: validate
+        steps:
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r tests/requirements.txt
+              pytest
+            displayName: Unit tests (pytest)
+          - script: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+            displayName: Install Databricks CLI
+          - script: databricks bundle validate -t dev
+            displayName: Validate bundle
+
+  - stage: deploy_staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: staging
+        environment: staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+                  displayName: Install Databricks CLI
+                - script: databricks bundle deploy -t staging
+                  displayName: Deploy to staging
+                - script: databricks bundle run {{.product_name}}_build -t staging
+                  displayName: Run integration test
+
+  - stage: deploy_prod
+    dependsOn: deploy_staging
+    condition: succeeded()
+    jobs:
+      - deployment: prod
+        environment: prod          # add an Approval check on this Environment
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+                  displayName: Install Databricks CLI
+                - script: databricks bundle deploy -t prod
+                  displayName: Deploy to production

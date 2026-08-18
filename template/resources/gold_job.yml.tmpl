@@ -1,0 +1,22 @@
+# ── SAMPLE resource ──────────────────────────────────────────────────────────
+# This job builds a placeholder gold table so the bundle is deployable on day one.
+# Replace it with your product's real jobs (e.g. your silver -> gold transform),
+# and add more resources here (jobs, DLT pipelines, dashboards) as needed.
+# ─────────────────────────────────────────────────────────────────────────────
+resources:
+  jobs:
+    {{.product_name}}_build:
+      name: "[${bundle.target}] {{.product_name}} — build gold tables"
+      tasks:
+        - task_key: build_gold
+          notebook_task:
+            notebook_path: ../src/build_gold.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+      # Runs on serverless (no cluster block). Development mode auto-pauses this
+      # schedule in dev; it runs in staging and prod.
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED

@@ -1,0 +1,54 @@
+bundle:
+  name: {{.product_name}}
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for this data product.
+    default: {{.catalog}}
+  schema:
+    description: Target schema (set per target).
+  warehouse_id:
+    description: SQL warehouse used for queries and dashboards.
+    default: "{{.warehouse_id}}"
+
+include:
+  - resources/*.yml
+
+# Test / CI scaffolding isn't part of the deployed product — don't sync it.
+sync:
+  exclude:
+    - tests
+    - pytest.ini
+    - azure-pipelines.yml
+
+targets:
+  # Developers deploy here as themselves. Development mode prefixes resources with
+  # the user's name and pauses schedules, so many people can deploy without colliding.
+  dev:
+    mode: development
+    default: true
+    variables:
+      schema: {{.schema}}_dev
+    workspace:
+      host: {{.workspace_host}}
+
+  # Prod-shaped deploy for integration tests before promotion. Deployed by the
+  # staging service principal from the pipeline.
+  staging:
+    mode: production
+    variables:
+      schema: {{.schema}}_staging
+    workspace:
+      host: {{.workspace_host}}
+      # production mode needs an explicit root_path so the service principal
+      # deploys exactly one shared copy (resolves to the deploying SP's home).
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  # The same bundle, promoted. Deployed by the prod service principal after approval.
+  prod:
+    mode: production
+    variables:
+      schema: {{.schema}}
+    workspace:
+      host: {{.workspace_host}}
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
